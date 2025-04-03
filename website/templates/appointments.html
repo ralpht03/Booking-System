@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule Management{% endblock %}
+
+{% block content %}
+<style>
+    .main-container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+
+    .section {
+      padding-bottom: 20px;
+      margin-bottom: 40px;
+      border-bottom: 2px solid #ccc;
+    }
+
+    .result-item {
+      font-size: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .result-item button {
+      margin-left: 10px;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+    }
+
+    .form-group,
+    .list-container {
+      margin-bottom: 20px;
+      margin-top: 20px;
+    }
+
+    .form-group label,
+    .form-group input,
+    button {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+    }
+
+    .form-group input,
+    .btn {
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .btn {
+      width: auto;
+      margin-top: 10px;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+</style>
+
+<div class="section">
+    <h3>Upcoming Appointments</h3>
+    <ul id="appointments" class="list-group"></ul>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/appointments')
+            .then(response => response.json())
+            .then(appointments => {
+                const container = document.getElementById('appointments');
+                container.innerHTML = '';
+                appointments.forEach(appointment => {
+                    const item = document.createElement('li');
+                    item.textContent = `Date: ${appointment.date}, Start: ${appointment.start_time}, End: ${appointment.end_time}, Service: ${appointment.service_name}, Customer: ${appointment.client_name}`;
+                    container.appendChild(item);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+    });
+</script>
+{% endblock %}

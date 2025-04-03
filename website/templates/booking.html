@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Booking Appointment{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Book an Appointment</h2>
+    <form method="POST" id="bookingForm">
+        <div class="form-group">
+            <label for="barber_service">Select Barber and Service:</label>
+            <select id="barber_service" name="barber_service" class="form-control" required>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="date">Date:</label>
+            <select id="date" name="date" class="form-control" required>
+                <option value="" disabled selected>Select a date</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="time">Time:</label>
+            <select id="time" name="time" class="form-control" required>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Book Now</button>
+    </form>
+
+    <div id="appointments_list" class="mt-3">
+        <h3>Your Appointments</h3>
+        <ul id="appointments"></ul>
+    </div>
+
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const bookForm = document.getElementById('bookingForm');
+        load_user_appointments();
+
+        bookForm.onsubmit = function (e) {
+            e.preventDefault();
+            const selection = document.getElementById('barber_service').value.split('-');
+            const barber_id = selection[1];
+            const service_id = selection[3]
+            const date = document.getElementById('date').value;
+            const start_time = document.getElementById('time').value;
+
+
+            fetch('/booking', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ barber_id: barber_id, service_id: service_id, date: date, start_time: start_time })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                load_user_appointments();
+                resetForm();
+            })
+            .catch(error => console.error('Error:', error));
+        };
+
+        function resetForm(){
+            document.getElementById('barber_service').selectedIndex = 0;  // Reset to the first option
+            document.getElementById('date').innerHTML = '<option value="" disabled selected>Select a date</option>'; // Clear date options
+            document.getElementById('time').innerHTML = '<option value="" disabled selected>Select a time</option>'; // Clear time options
+        }
+
+        fetch('/get-barbers')
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                let options = '<option value="" disabled selected>Select your option</option>';
+                options += Object.entries(data).map(([barber, services]) => {
+                    return services.map(service => {
+                        return `<option value="${barber}-${service.barber_id}-${service.service_name}-${service.service_id}">${barber} - ${service.service_name} - ${'$'}${service.price}</option>`;
+                    }).join('');
+                }).join('');
+                document.getElementById('barber_service').innerHTML = options;
+                console.log(options);
+            });
+
+        document.getElementById('barber_service').addEventListener('change', function() {
+            const selection = document.getElementById('barber_service').value.split('-');
+            const barber_id = selection[1];
+            load_barber_dates(barber_id);
+        });
+
+        document.getElementById('date').addEventListener('change', function() {
+            const barber_id = document.getElementById('barber_service').value.split('-')[1];
+            const date = document.getElementById('date').value;
+            load_available_times(barber_id, date);
+        });
+    });
+
+    function load_available_times(barber_id, date) {
+        if (date) {
+            fetch('/get-available-times', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ barber_id: barber_id, date: date })
+            })
+            .then(response => response.json())
+            .then(data => {
+                let time_options = '<option value="" disabled selected>Select an option</option>';
+                time_options += data.map(time_slot => {
+                    return `<option value="${time_slot.start_time}">${time_slot.start_time} - ${time_slot.end_time}</option>`;
+                }).join('');
+                document.getElementById('time').innerHTML = time_options;
+                console.log(time_options)
+            });
+        }
+    }
+
+    function load_barber_dates(barber_id) {
+        fetch(`/get-barber-dates/${barber_id}`)
+        .then(response => response.json())
+        .then(data => {
+            let date_options = '<option value="" disabled selected>Select a date</option>';
+            date_options += data.map(date => {
+                return `<option value="${date}">${date}</option>`;
+            }).join('');
+            document.getElementById('date').innerHTML = date_options;
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function load_user_appointments() {
+        fetch('/get-user-appointments')
+        .then(response => response.json())
+        .then(appointments => {
+            const appointmentsList = document.getElementById('appointments');
+            appointmentsList.innerHTML = '';  
+            appointments.forEach(appointment => {
+                const li = document.createElement('li');
+                li.textContent = `${appointment.date} from ${appointment.start_time} to ${appointment.end_time} with ${appointment.barber_name} - ${appointment.service_name} - $${appointment.price}`;
+                appointmentsList.appendChild(li);
+            });
+            if (appointments.length === 0) {
+                appointmentsList.innerHTML = '<li>No upcoming appointments.</li>';
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+</script>
+
+{% endblock %}

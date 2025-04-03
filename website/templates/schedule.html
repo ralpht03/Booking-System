@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule Management{% endblock %}
+
+{% block content %}
+<style>
+    .main-container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+
+    .section {
+      padding-bottom: 20px;
+      margin-bottom: 40px;
+      border-bottom: 2px solid #ccc;
+    }
+
+    .result-item {
+      font-size: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .result-item button {
+      margin-left: 10px;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+    }
+
+    .form-group,
+    .list-container {
+      margin-bottom: 20px;
+      margin-top: 20px;
+    }
+
+    .form-group label,
+    .form-group input,
+    button {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+    }
+
+    .form-group input,
+    .btn {
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .btn {
+      width: auto;
+      margin-top: 10px;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+</style>
+
+<div class="section">
+    <form id="addScheduleForm" action="/schedule" method="POST">
+        <div class="form-group">
+            <label for="addDate">Work Date:</label>
+            <input type="date" id="addDate" name="addDate" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="addStart">Start Time:</label>
+            <input type="time" id="addStart" name="addStart" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="addEnd">End Time:</label>
+            <input type="time" id="addEnd" name="addEnd" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add to Schedule</button>
+    </form>
+</div>
+
+<div class="section">
+    <h3>Upcoming Schedules</h3>
+    <ul id="schedules" class="list-group"></ul>
+</div>
+
+<div class="section" style="display:none;" id="editSection">
+    <form id="editScheduleForm">
+        <div class="form-group">
+            <label for="editDate">Work Date:</label>
+            <input type="date" id="editDate" name="editDate" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="editStart">Start Time:</label>
+            <input type="time" id="editStart" name="editStart" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label for="editEnd">End Time:</label>
+            <input type="time" id="editEnd" name="editEnd" class="form-control" required>
+        </div>
+        <input type="hidden" id="editId" name="editId">
+        <button type="submit" class="btn btn-primary">Update Schedule</button>
+    </form>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const addForm = document.getElementById('addScheduleForm');
+        const editForm = document.getElementById('editScheduleForm');
+        const editSection = document.getElementById('editSection');
+
+        addForm.onsubmit = function (e) {
+            e.preventDefault();
+            const workDate = document.getElementById('addDate').value;
+            const startTime = document.getElementById('addStart').value;
+            const endTime = document.getElementById('addEnd').value;
+            const barberId = {{ user.id | tojson }};
+
+            fetch('/schedule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ work_date: workDate, start_time: startTime, end_time: endTime, barber_id: barberId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                location.reload();
+            })
+            .catch(error => console.error('Error:', error));
+        };
+
+        editForm.onsubmit = function (e) {
+            e.preventDefault();
+            const scheduleId = document.getElementById('editId').value;
+            const workDate = document.getElementById('editDate').value;
+            const startTime = document.getElementById('editStart').value;
+            const endTime = document.getElementById('editEnd').value;
+            const barberId = {{ user.id | tojson }};
+
+            fetch(`/schedule/${scheduleId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ work_date: workDate, start_time: startTime, end_time: endTime, barber_id: barberId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                location.reload();
+            })
+            .catch(error => console.error('Error:', error));
+        };
+
+        fetch('/schedule')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('schedules');
+                container.innerHTML = '';
+                data.forEach(schedule => {
+                    const item = document.createElement('li');
+                    item.textContent = `Date: ${schedule.work_date}, Start: ${schedule.start_time}, End: ${schedule.end_time}`;
+
+                    const editButton = document.createElement('button');
+                    editButton.textContent = 'Edit';
+                    editButton.className = 'btn btn-primary';
+                    editButton.style.marginRight = '10px';
+                    editButton.onclick = function () {
+                        document.getElementById('editId').value = schedule.id;
+                        var formattedDate = new Date(schedule.work_date).toISOString().slice(0, 10);
+                        document.getElementById('editDate').value = formattedDate;
+                        document.getElementById('editStart').value = schedule.start_time;
+                        document.getElementById('editEnd').value = schedule.end_time;
+                        editSection.style.display = 'block';
+                    };
+
+                    const removeButton = document.createElement('button');
+                    removeButton.textContent = 'Remove';
+                    removeButton.className = 'btn btn-danger';
+                    removeButton.onclick = function () {
+                        fetch(`/schedule/${schedule.id}`, {
+                            method: 'DELETE'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Success:', data);
+                            location.reload();
+                        })
+                        .catch(error => console.error('Error:', error));
+                    };
+
+                    item.appendChild(editButton);
+                    item.appendChild(document.createTextNode(" "))
+                    item.appendChild(removeButton);
+                    container.appendChild(item);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+    });
+</script>
+{% endblock %}

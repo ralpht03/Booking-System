@@ -1,0 +1,14 @@
+.responsive-image {
+    width: 25%;
+    height: auto;
+}
+
+body > .container {
+    margin-top: 20px; /* Adjust the value to your preference */
+    margin-bottom: 20px; /* Adjust the value to your preference */
+}
+
+.main-content {
+    margin-top: 20px; /* Adjust the value to your preference */
+    margin-bottom: 20px; /* Adjust the value to your preference */
+}  

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}The Crew{% endblock %}
+{% block content %}
+<div>
+    <h1 class="text-center">Meet the crew</h1>
+    {% for barber in barbers %}
+    <div class="barber-section">
+        <h2 class="text-center">{{ barber.first_name }} {{ barber.last_name }}</h2>
+        <div class="text-center">
+            <!-- Add barber image here -->
+        </div>
+        <p>Email: {{ barber.email }}</p>
+        <p>Average Rating: {{ barber.avg_rating }}</p>
+        <h3>Schedule</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in barber.schedule %}
+                <tr>
+                    <td>{{ entry.work_date }}</td>
+                    <td>{{ entry.start_time }}</td>
+                    <td>{{ entry.end_time }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

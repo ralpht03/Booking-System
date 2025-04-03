@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Service Management{% endblock %}
+
+{% block content %}
+<style>
+    .main-container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+
+    .section {
+      padding-bottom: 20px;
+      /* Space at the bottom of each section */
+      margin-bottom: 40px;
+      /* Additional space between sections */
+      border-bottom: 2px solid #ccc;
+      /* Horizontal line */
+    }
+
+    .result-item {
+      font-size: 18px;
+      /* Increases the font size of the result text */
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      /* Adds space between each result item */
+    }
+
+    .result-item button {
+      margin-left: 10px;
+      /* Ensures a little space between the text and the button if needed */
+    }
+
+
+    .section:last-child {
+      border-bottom: none;
+      /* No horizontal line for the last section */
+    }
+
+    .form-group,
+    .list-container {
+      margin-bottom: 20px;
+      margin-top: 20px;
+      /* Creates space between the search button and the results */
+
+    }
+
+    .form-group label,
+    .form-group input,
+    button {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+    }
+
+    .form-group input,
+    .btn {
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    .btn {
+      width: auto;
+      margin-top: 10px;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+  </style>
+    <div class="section">
+        <form id="add-service-form" action="/services" method="POST">
+          <div class="form-group">
+            <label for="add-name">Service Name:</label>
+            <select id="add-name" name="name" class="form-control" required>
+                {% for service in services %}
+                    <option value="{{ service }}">{{ service }}</option>
+                {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <input type="number" id="add-price" placeholder="Price" min="0" step="1">
+          </div>
+            <button type="submit" class="btn btn-primary">Add Service</button>
+        </form>
+    </div>
+
+<div class="section">
+    <h3>Services</h3>
+    <ul id="services"></ul>
+</div>
+
+<div class="section" style="display:none;" id="edit-section">
+    <form id="edit-service-form">
+        <div class="form-group">
+          <label for="edit-name">Service Name:</label>
+          <select id="edit-name" name="name" class="form-control" required>
+              {% for service in services %}
+                  <option value="{{ service }}">{{ service }}</option>
+              {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+            <label for="edit-price">Price:</label>
+            <input type="number" id="edit-price" placeholder="Price" min="0" step="1">
+        </div>
+        <input type="hidden" id="edit-id">
+        <button type="submit" class="btn btn-primary">Update Service</button>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const addForm = document.getElementById('add-service-form');
+        const editForm = document.getElementById('edit-service-form');
+        const editSection = document.getElementById('edit-section');
+
+        addForm.onsubmit = function (e) {
+            e.preventDefault();
+            const name = document.getElementById('add-name').value;
+            const price = document.getElementById('add-price').value;
+            const barber_id = {{ user.id | tojson }};
+            fetch('/services', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: name, price: price, barber_id: barber_id})
+            })
+            .then(response => {
+              if (!response.ok) {
+                  throw new Error('Network response was not ok.');
+              }
+              return response.json();
+          })
+            .then(data => {
+                console.log('Success:', data);
+                location.reload();
+            })
+            .catch(error => console.error('Error:', error));
+        };
+
+        editForm.onsubmit = function (e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const name = document.getElementById('edit-name').value;
+            const price = document.getElementById('edit-price').value;
+            const barber_id = {{ user.id | tojson }};
+
+            fetch(`/services/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: name, price: price, barber_id: barber_id})
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                location.reload();
+            })
+            .catch(error => console.error('Error:', error));
+        };
+
+        fetch('/services')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('services');
+                container.innerHTML = '';
+                data.forEach(service => {
+                    const item = document.createElement('li');
+                    item.textContent = `${service.name}: $${service.price}`;
+
+                    const editButton = document.createElement('button');
+                    editButton.textContent = 'Edit Service';
+                    editButton.className = 'btn btn-primary';
+                    editButton.style.marginRight = '10px';
+                    editButton.onclick = function () {
+                        document.getElementById('edit-name').value = service.name;
+                        document.getElementById('edit-price').value = service.price;
+                        document.getElementById('edit-id').value = service.id;
+                        editSection.style.display = 'block';
+                    };
+
+                    const removeButton = document.createElement('button');
+                    removeButton.textContent = 'Remove Service';
+                    removeButton.className = 'btn btn-danger';
+                    removeButton.onclick = function () {
+                        fetch(`/services/${service.id}`, {
+                            method: 'DELETE'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Success:', data);
+                            location.reload();
+                        })
+                        .catch(error => console.error('Error:', error));
+                    };
+
+                    item.appendChild(editButton);
+                    item.appendChild(document.createTextNode(" "))
+                    item.appendChild(removeButton);
+                    container.appendChild(item);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+    });
+</script>
+{% endblock %}
