@@ -2,14 +2,19 @@ from flask import Flask
 from flask_login import LoginManager
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configuration
 DATABASE = {
-    'dbname': 'barbershop',
-    'user': 'DBDESIGN',
-    'password': 'Password1!',
-    'host': 'db-design-proj.c9s6sgugwn30.us-east-1.rds.amazonaws.com',
-    'port': 5432
+    'dbname': os.getenv('DB_NAME', 'barbershop'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'host': os.getenv('DB_HOST'),
+    'port': int(os.getenv('DB_PORT', '5432'))
 }
 
 # Database connection
@@ -29,7 +34,7 @@ def run_query(query: str, data=None, is_fetch=True):
 
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'hjshjhdjah kjshkjdhjs'
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key')
 
     from .views import views
     from .auth import auth

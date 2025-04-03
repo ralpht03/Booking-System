@@ -33,6 +33,7 @@ A full-featured web application for managing barbershop appointments, services, 
   - Flask web framework
   - Flask-Login for authentication
   - PostgreSQL database
+  - python-dotenv for environment variable management
 
 - **Frontend**
   - HTML, CSS, JavaScript
@@ -67,9 +68,18 @@ The application uses a PostgreSQL database with tables for:
    pip install -r requirements.txt
    '''
 
-3. Database Configuration:
-   - The application is configured to connect to a PostgreSQL database
-   - Update the database connection details in 'website/__init__.py'
+3. Environment Configuration:
+   - Create a '.env' file in the root directory with the following variables:
+     '''
+     DB_NAME=your_database_name
+     DB_USER=your_database_user
+     DB_PASSWORD=your_database_password
+     DB_HOST=your_database_host
+     DB_PORT=5432
+     SECRET_KEY=your_secret_key
+     '''
+   - Replace the placeholder values with your actual database credentials
+   - The application uses these environment variables to connect to your PostgreSQL database
 
 ## Running the Application
 
@@ -89,7 +99,7 @@ The application will be accessible at `http://127.0.0.1:5000/` in your web brows
 
 - 'main.py' - Application entry point
 - 'website/' - Main application package
-  - '__init__.py' - Flask application initialization
+  - '__init__.py' - Flask application initialization and database configurations
   - 'models.py' - Database models
   - 'auth.py' - Authentication routes
   - 'views.py' - Main application routes
